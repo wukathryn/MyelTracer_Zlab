@@ -2573,7 +2573,7 @@ class Axon_Editor:
                             Colors.ORANGE_HIGHLIGHT.value, cv.FILLED)
             cv.drawContours(overlay_image, self.saved_contours[
                                         self.mode_to_string(ToolMode.SEL_MISC)],
-                            -1,Colors.RED_HIGHLIGHT.value, cv.FILLED)
+                            -1,Colors.CYAN_HIGHLIGHT.value, cv.FILLED)
             if len(self.highlight_contours) > 0:
                 for c_group in self.highlight_contours:
                     cv.drawContours(overlay_image, (c_group[0],), -1, 
