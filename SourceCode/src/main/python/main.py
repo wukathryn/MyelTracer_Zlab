@@ -58,6 +58,9 @@ class Colors(Enum):
     CYAN_HIGHLIGHT = (241, 245, 132)
     ORANGE_HIGHLIGHT = (0, 153, 255)
     YELLOW_HIGHLIGHT = (128, 251, 255)
+    BLACK_GRAYSCALE = 0
+    GRAY_GRAYSCALE = 127
+    WHITE_GRAYSCALE = 255
 
 class Quality(Enum):
     """Quality options for image import"""
@@ -1177,8 +1180,8 @@ class DisplayImageWidget(QWidget):
 
         # Min Size and Max Size Sliders
         self.min_max_slider_layout = QVBoxLayout()
-        self.min_slider = HButtonSlider(self, 'Min Size', 0, 800, 1000**0.5)
-        self.max_slider = HButtonSlider(self, 'Max Size', 0, 800, 50000**0.5)
+        self.min_slider = HButtonSlider(self, 'Min Size', 0, 900, 1000**0.5)
+        self.max_slider = HButtonSlider(self, 'Max Size', 0, 900, 50000**0.5)
         self.min_slider.valueChanged.connect(
             lambda: self.constrain_min_slider(self.min_slider, self.max_slider))
         self.min_slider.layout.setAlignment(Qt.AlignTop)
@@ -2557,20 +2560,20 @@ class Axon_Editor:
         # Draw contour outlines
         if self.display_options['outlines']:
             cv.drawContours(overlay_image, self.cur_contours, -1, 
-                            Colors.YELLOW.value, self.outline_thickness)
+                            Colors.RED.value, self.outline_thickness)
             for c in self.saved_contours.values():
                 cv.drawContours(overlay_image, c, -1, Colors.BLACK.value, 
                                 self.outline_thickness)
 
         # Draw highlights
         if self.display_options['highlights']:
-            cv.drawContours(overlay_image, self.contour_pairs, -1, 
+            cv.drawContours(overlay_image, self.contour_pairs, -1,
                             Colors.CYAN_HIGHLIGHT.value, cv.FILLED)
             cv.drawContours(overlay_image, self.contour_pairless, -1, 
                             Colors.ORANGE_HIGHLIGHT.value, cv.FILLED)
             cv.drawContours(overlay_image, self.saved_contours[
                                         self.mode_to_string(ToolMode.SEL_MISC)],
-                            -1, Colors.CYAN_HIGHLIGHT.value, cv.FILLED)
+                            -1,Colors.RED_HIGHLIGHT.value, cv.FILLED)
             if len(self.highlight_contours) > 0:
                 for c_group in self.highlight_contours:
                     cv.drawContours(overlay_image, (c_group[0],), -1, 
@@ -2674,8 +2677,14 @@ class Axon_Editor:
         file_name = self.filename.split('/')[-1]
         new_filename = (file_path + '.'.join(file_name.split('.')[:-1]) 
                         + '-overlay.' + file_name.split('.')[-1])
+        mask_filename = (file_path + '.'.join(file_name.split('.')[:-1])
+                        + '-mask.' + file_name.split('.')[-1])
 
         overlay = self.image_copy.copy()
+
+        #create mask (KW)
+        mask = cv.cvtColor(overlay, cv.COLOR_BGR2GRAY)
+        mask[mask > 0] = Colors.BLACK_GRAYSCALE.value
 
         text_to_add = []
 
@@ -2683,6 +2692,7 @@ class Axon_Editor:
 
         text_filename = (file_path + '.'.join(file_name.split('.')[:-1])
                          + '-area_calculations.csv')
+
         with open(text_filename, 'w') as f:
             to_write = 'Number,'
             if export_selections['Axon Area']:
@@ -2768,10 +2778,24 @@ class Axon_Editor:
                     f.write(to_write)
 
                 if sub_to_write:
-                    cv.drawContours(overlay, self.contour_pairs[i:i+3], -1, 
-                                    Colors.CYAN_HIGHLIGHT.value, cv.FILLED)
-                    cv.drawContours(overlay, self.contour_pairs[i:i+3], -1, 
-                                    Colors.BLACK.value, 1)
+                    #cv.drawContours(overlay, self.contour_pairs[i:i+3], -1,
+                    #                Colors.CYAN_HIGHLIGHT.value, cv.FILLED)
+
+                    #Colors in overlay (KW)
+                    cv.drawContours(overlay, self.contour_pairs[i:i+3], -1,
+                                    Colors.GREEN_HIGHLIGHT.value, cv.FILLED)
+                    cv.drawContours(overlay, self.contour_pairs[i+2:i+3], -1,
+                                    Colors.ORANGE_HIGHLIGHT.value, cv.FILLED)
+                    #cv.drawContours(overlay, self.contour_pairs[i:i+3], -1,
+                    #                Colors.BLACK.value, 1)
+
+                    #myelin mask (KW)
+                    cv.drawContours(mask, self.contour_pairs[i:i+3], -1,
+                                    Colors.GRAY_GRAYSCALE.value, cv.FILLED)
+
+                    #axon mask (KW)
+                    cv.drawContours(mask, self.contour_pairs[i+2:i+3], -1,
+                                    Colors.WHITE_GRAYSCALE.value, cv.FILLED)
 
                     c = self.contour_pairs[i]
                     M = cv.moments(c)
@@ -3011,6 +3035,7 @@ class Axon_Editor:
         
         export_image = cv.addWeighted(overlay, self.alpha, self.image_copy, 
                                       1-self.alpha, 0)
+
         for t in text_to_add:
             cv.putText(export_image, t[0], t[1], cv.FONT_HERSHEY_SIMPLEX, self.font_size, 
                        Colors.WHITE.value, int(2*self.font_size))
@@ -3031,6 +3056,8 @@ class Axon_Editor:
                            int(2*self.font_size))
 
         cv.imwrite(new_filename, export_image)
+        cv.imwrite(mask_filename, mask)
+
 
     def scale_contour(self, contour, scaling):
         """
