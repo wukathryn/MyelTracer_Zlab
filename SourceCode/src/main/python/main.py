@@ -834,6 +834,7 @@ class OpenDialog(QDialog):
         radio_button_layout.addWidget(self.radio_label)
         # Original Quality
         self.radio_original = QRadioButton('Original:\t100%')
+        self.radio_original.setChecked(True)
         self.radio_original.toggled.connect(
             lambda: self.set_quality(Quality.ORIGINAL))
         radio_button_layout.addWidget(self.radio_original)
@@ -848,7 +849,6 @@ class OpenDialog(QDialog):
         radio_button_layout.addWidget(self.radio_high)
         # Medium Quality
         self.radio_medium = QRadioButton('Medium:\t70%')
-        self.radio_medium.setChecked(True)
         self.radio_medium.toggled.connect(
             lambda: self.set_quality(Quality.MEDIUM))
         radio_button_layout.addWidget(self.radio_medium)
