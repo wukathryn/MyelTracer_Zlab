@@ -819,7 +819,7 @@ class OpenDialog(QDialog):
         super(OpenDialog, self).__init__(parent)
         
         self.setWindowTitle("Import settings")
-        self.quality = Quality.MEDIUM
+        self.quality = Quality.ORIGINAL
         
         QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
         
